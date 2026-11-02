@@ -21,6 +21,8 @@ from app.schemas.auth import UsuarioCreate
 from app.services import auth as svc_auth
 
 TABELAS = [
+    "regra_contabilizacao_linha", "regra_contabilizacao", "documento_fiscal_item", "documento_fiscal",
+    "produto_referencia", "produto", "participante",
     "auditoria", "partida", "lancamento", "periodo", "centro_custo", "conta",
     "usuario_empresa", "empresa", "refresh_token", "usuario",
 ]
@@ -77,9 +79,10 @@ CNPJ_A = "11222333000181"
 CNPJ_B = "34028316000103"
 
 
-def criar_empresa(client: TestClient, headers: dict, cnpj: str = CNPJ_A, nome: str = "Empresa A") -> str:
+def criar_empresa(client: TestClient, headers: dict, cnpj: str = CNPJ_A, nome: str = "Empresa A",
+                  regime: str = "SIMPLES") -> str:
     r = client.post("/api/v1/empresas", headers=headers, json={
-        "razao_social": nome, "cnpj": cnpj, "regime_tributario": "SIMPLES", "criar_plano_padrao": True,
+        "razao_social": nome, "cnpj": cnpj, "regime_tributario": regime, "criar_plano_padrao": True,
     })
     assert r.status_code == 201, r.text
     return r.json()["id"]

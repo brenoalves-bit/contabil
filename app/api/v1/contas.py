@@ -29,8 +29,9 @@ def criar(empresa_id: UUID, dados: ContaCreate, db: DB, ctx: AdminEmpresa):
 
 
 @router.post("/contas/plano-padrao", status_code=status.HTTP_201_CREATED)
-def plano_padrao(empresa_id: UUID, db: DB, ctx: AdminEmpresa):
-    return {"contas_criadas": svc.criar_plano_padrao(db, ctx.empresa_id)}
+def plano_padrao(empresa_id: UUID, db: DB, ctx: AdminEmpresa, completar: bool = False):
+    """Carrega o plano padrão. Com `completar=true`, insere apenas as contas que faltam."""
+    return {"contas_criadas": svc.criar_plano_padrao(db, ctx.empresa_id, completar=completar)}
 
 
 @router.get("/contas/{codigo}", response_model=ContaOut)

@@ -83,10 +83,12 @@ def atualizar(db: Session, ctx: Contexto, codigo: str, dados: ContaUpdate) -> Co
     return c
 
 
-def criar_plano_padrao(db: Session, empresa_id: UUID) -> int:
-    """Carrega o plano padrão. Só permitido em empresa sem contas."""
-    if db.scalar(select(Conta.id).where(Conta.empresa_id == empresa_id).limit(1)):
-        raise Conflict("empresa já possui plano de contas")
+def criar_plano_padrao(db: Session, empresa_id: UUID, *, completar: bool = False) -> int:
+    """Carrega o plano padrão. Em empresa que já tem contas, só com `completar=True`:
+    insere apenas os códigos ausentes e não altera nada do que existe."""
+    existentes: dict[str, Conta] = {c.codigo: c for c in db.scalars(select(Conta).where(Conta.empresa_id == empresa_id))}
+    if existentes and not completar:
+        raise Conflict("empresa já possui plano de contas; use completar=true para inserir só as contas faltantes")
     codigos_com_filhas = set()
     todos = [p[0] for p in PLANO]
     for cod in todos:
@@ -94,8 +96,11 @@ def criar_plano_padrao(db: Session, empresa_id: UUID) -> int:
             if outro != cod and outro.startswith(cod + "."):
                 codigos_com_filhas.add(cod)
                 break
-    criadas: dict[str, Conta] = {}
+    criadas: dict[str, Conta] = dict(existentes)
+    novas = 0
     for codigo, nome, grupo, natureza in PLANO:
+        if codigo in existentes:
+            continue
         pai = None
         partes = codigo.split(".")
         for n in range(len(partes) - 1, 0, -1):
@@ -115,7 +120,8 @@ def criar_plano_padrao(db: Session, empresa_id: UUID) -> int:
         db.add(c)
         db.flush()
         criadas[codigo] = c
-    return len(criadas)
+        novas += 1
+    return novas
 
 
 # ---------------------------------------------------------------- centros de custo

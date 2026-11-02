@@ -25,6 +25,14 @@ def test_plano_padrao_criado(client, admin, empresa):
     assert caixa["tipo"] == "ANALITICA" and caixa["nivel"] == 4 and caixa["natureza"] == "D"
     r = client.post(_url(empresa, "contas", "plano-padrao"), headers=admin)
     assert r.status_code == 409
+    # completar: nada falta
+    r = client.post(_url(empresa, "contas", "plano-padrao"), headers=admin, params={"completar": "true"})
+    assert r.status_code == 201 and r.json()["contas_criadas"] == 0
+    # inativa uma conta e completa de novo: não recria nem reativa
+    client.patch(_url(empresa, "contas", CAIXA), headers=admin, json={"ativa": False})
+    r = client.post(_url(empresa, "contas", "plano-padrao"), headers=admin, params={"completar": "true"})
+    assert r.json()["contas_criadas"] == 0
+    assert client.get(_url(empresa, "contas", CAIXA), headers=admin).json()["ativa"] is False
 
 
 def test_conta_nova_valida_hierarquia(client, admin, empresa):
